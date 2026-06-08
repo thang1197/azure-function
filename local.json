@@ -1,0 +1,10 @@
+{
+    "IsEncrypted": false,
+    "Values": {
+        "TargetEnvironment": "Development",
+        "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+        "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+        "LocalSqlConnectionString": "Host=localhost;Port=5432;Database=task_management;Username=postgres;Password=123456;SearchPath=public",
+        "SqlConnectionString": "Host=ep-orange-forest-a45f97ww-pooler.us-east-1.aws.neon.tech;Port=5432;Database=task_management;Username=task_management_owner;Password=npg_wG2rzcanpm6I;SSL Mode=Require;Trust Server Certificate=true;Channel Binding=Require"
+    }
+}
