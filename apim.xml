@@ -1,0 +1,26 @@
+<policies>
+    <inbound>
+        <base />
+        <set-backend-service id="apim-generated-policy" backend-id="WebApp_thangapp" />
+        <validate-jwt header-name="Authorization" require-scheme="Bearer">
+            <issuer-signing-keys>
+                <key>{{jwt-signing-key}}</key>
+            </issuer-signing-keys>
+            <audiences>
+                <audience>my-api</audience>
+            </audiences>
+            <issuers>
+                <issuer>https://my-backend-auth</issuer>
+            </issuers>
+        </validate-jwt>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>

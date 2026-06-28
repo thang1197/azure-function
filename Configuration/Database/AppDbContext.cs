@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using Azure_Function.Projects;
 using Microsoft.EntityFrameworkCore;
-namespace Azure_Function.Configuration.Database
+using AzureFunction.Notifications.Entity;
+using AzureFunction.Storage.Entity;
+namespace AzureFunction.Configuration.Database
 {
     public class AppDbContext : DbContext
     {
@@ -12,7 +12,8 @@ namespace Azure_Function.Configuration.Database
         : base(options)
         {
         }
-        public DbSet<Project> Projects { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<FileStorage> FileStorages { get; set; }
         // protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         // {
         //     // Replace with your actual PostgreSQL connection details

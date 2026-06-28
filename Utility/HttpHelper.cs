@@ -1,7 +1,8 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Azure_Function.Utility
+namespace AzureFunction.Utility
 {
     public class HttpHelper
     {
@@ -37,6 +38,44 @@ namespace Azure_Function.Utility
                 };
                 return result;
             }
+        }
+
+        public static IActionResult GenerateErrorResponse(string errorMessage, int statusCode = StatusCodes.Status400BadRequest)
+        {
+            var response = new
+            {
+                status = "error",
+                code = statusCode,
+                error = errorMessage
+            };
+            var result = new ObjectResult(response)
+            {
+                StatusCode = statusCode
+            };
+            return result;
+        }
+
+        public static IEnumerable<string?>? ValidateRequestBody<T>(T requestBody)
+        {
+            if (requestBody is null)
+            {
+                return null;
+            }
+
+            var validationContext = new ValidationContext(requestBody);
+            var validationResults = new List<ValidationResult>();
+
+            bool isValid = Validator.TryValidateObject(
+                requestBody,
+                validationContext,
+                validationResults,
+                validateAllProperties: true);
+
+            if (!isValid)
+            {
+                return validationResults.Select(v => v.ErrorMessage);
+            }
+            return null;
         }
     }
 }
