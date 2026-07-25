@@ -1,11 +1,23 @@
 using System.ComponentModel.DataAnnotations;
+using Azure.Core;
+using Azure.Identity;
+using AzureFunction.Configuration.App;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace AzureFunction.Utility
 {
-    public class HttpHelper
+    public class HttpHelper(ApiManagementSettings apiManagementsettings, AzureAdSettings azureAdSettings, ClientSecretCredential clientSecretCredential)
     {
+        private readonly ApiManagementSettings _apiManagementsettings = apiManagementsettings;
+        private readonly ClientSecretCredential _clientSecretCredential = clientSecretCredential;
+        private readonly AzureAdSettings _azureAdSettings = azureAdSettings;
+        private readonly HttpClient _httpClient = new()
+        {
+            Timeout = TimeSpan.FromSeconds(10),
+            BaseAddress = new Uri(apiManagementsettings.Url)
+        };
         public static IActionResult GenerateResponse<T>(T data, int statusCode = StatusCodes.Status200OK)
         {
             try
@@ -76,6 +88,25 @@ namespace AzureFunction.Utility
                 return validationResults.Select(v => v.ErrorMessage);
             }
             return null;
+        }
+
+        public HttpClient GetHttpClient()
+        {
+            return _httpClient;
+        }
+
+        public async Task<string> GetAdToken()
+        {
+            try
+            {
+                var token = await _clientSecretCredential.GetTokenAsync(new TokenRequestContext([_azureAdSettings.Scope]));
+                return token.Token;
+            }
+            catch (System.Exception)
+            {
+
+                throw;
+            }
         }
     }
 }

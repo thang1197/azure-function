@@ -13,9 +13,9 @@
         "queues": {
             "messageEncoding": "none"
         },
-        "durableTask": {
-            "hubName": "DurableFunctionsHub"
+        "http": {
+            "routePrefix": "api/v1"
         }
     },
-    "functionTimeout": "00:00:02"
+    "functionTimeout": "00:04:00"
 }

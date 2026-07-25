@@ -16,10 +16,12 @@ namespace AzureFunction.Storage.Http
         private readonly IBlobStorageService _blobStorageService = blobStorageService;
         private readonly ILogger<StorageFunction> _logger = logger;
         [Function("UploadFileFunction")]
-        public async Task<IActionResult> UploadFile([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequest req)
+        public async Task<IActionResult> UploadFile([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequest req, FunctionContext executionContext)
         {
             try
             {
+                var claims = executionContext.GetUser();
+                _logger.LogInformation($"claims: {claims}");
                 // Make sure the request is multipart/form-data
                 if (!req.HasFormContentType)
                 {
@@ -28,13 +30,24 @@ namespace AzureFunction.Storage.Http
 
                 var form = await req.ReadFormAsync();
                 var file = form.Files["file"]; // "file" must match the form-data field name
+                var containerName = form["containerName"];
+
+                if(string.IsNullOrEmpty(containerName))
+                {
+                    return HttpHelper.GenerateErrorResponse("Missing container name", StatusCodes.Status400BadRequest);
+                }
 
                 if (file == null || file.Length == 0)
                 {
                     return HttpHelper.GenerateErrorResponse("No file uploaded", StatusCodes.Status400BadRequest);
                 }
 
-                var fileName = await _blobStorageService.UploadAsync(file.FileName, file.OpenReadStream());
+                var metadata = new Dictionary<string, string>
+                {
+                    {"userCreated", claims != null ? claims.UserId.ToString() : "default" },
+                    {"userUpdated", claims != null ? claims.UserId.ToString() : "default" }
+                };
+                var fileName = await _blobStorageService.UploadAsync(file.FileName, containerName, file.OpenReadStream(), metadata);
                 return HttpHelper.GenerateResponse(fileName);
             }
             catch (RequestFailedException ex)
@@ -57,8 +70,24 @@ namespace AzureFunction.Storage.Http
         [Function("DeleteFileFunction")]
         public async Task<IActionResult> DeleteFile([HttpTrigger(AuthorizationLevel.Function, "delete")] HttpRequest req)
         {
-            // Implementation for the storage function
-            return new OkResult();
+            try
+            {
+                var blobName = req.Query["blobName"];
+                var containerName = req.Query["containerName"];
+
+                if(string.IsNullOrEmpty(blobName) || string.IsNullOrEmpty(containerName))
+                {
+                    return HttpHelper.GenerateErrorResponse("Missing file name or container name", StatusCodes.Status400BadRequest);
+                }
+
+                await _blobStorageService.DeleteAsync(blobName, containerName);
+                return HttpHelper.GenerateResponse("File deleted successfully.");
+            }
+            catch (System.Exception ex)
+            {
+                
+                return HttpHelper.GenerateErrorResponse(ex.Message, StatusCodes.Status500InternalServerError);
+            }
         }
 
         [Function("ListFilesFunction")]
@@ -66,7 +95,13 @@ namespace AzureFunction.Storage.Http
         {
             try
             {   
-                var files = await _blobStorageService.ListFilesAsync();
+                var containerName = req.Query["containerName"];
+
+                if(string.IsNullOrEmpty(containerName))
+                {
+                    return HttpHelper.GenerateErrorResponse("Missing container name", StatusCodes.Status400BadRequest);
+                }
+                var files = await _blobStorageService.ListFilesAsync(containerName);
                 return HttpHelper.GenerateResponse(files);
             }
             catch (System.Exception ex)
@@ -97,6 +132,28 @@ namespace AzureFunction.Storage.Http
             {
                 
                 return HttpHelper.GenerateErrorResponse(ex.Message, StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        [Function("GetBlobMetadataFunction")]
+        public async Task<IActionResult> GetBlobMetadata([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequest req)
+        {
+            try
+            {
+                var containerName = req.Query["containerName"];
+                var blobName = req.Query["blobName"];
+
+                if(string.IsNullOrEmpty(containerName) || string.IsNullOrEmpty(blobName))
+                {
+                    return HttpHelper.GenerateErrorResponse("Missing container name or blob name", StatusCodes.Status400BadRequest);
+                }
+
+                var metadata = await _blobStorageService.GetBlobMetadataAsync(blobName, containerName);
+                return HttpHelper.GenerateResponse(metadata);
+            }
+            catch (System.Exception ex)
+            {              
+               return HttpHelper.GenerateErrorResponse(ex.Message, StatusCodes.Status500InternalServerError);
             }
         }
     }

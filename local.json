@@ -1,56 +1,25 @@
-{
-    "value": [
-        {
-            "id": "/subscriptions/81038c04-43fa-4ca7-82a5-7c7b7254e705/resourceGroups/Developer/providers/Microsoft.ApiManagement/service/ThangAPIM/subscriptions/free",
-            "type": "Microsoft.ApiManagement/service/subscriptions",
-            "name": "free",
-            "properties": {
-                "scope": "/subscriptions/81038c04-43fa-4ca7-82a5-7c7b7254e705/resourceGroups/Developer/providers/Microsoft.ApiManagement/service/ThangAPIM/apis",
-                "displayName": "Free",
-                "state": "active",
-                "createdDate": "2026-06-25T04:55:46.9Z",
-                "startDate": null,
-                "expirationDate": null,
-                "endDate": null,
-                "notificationDate": null,
-                "stateComment": null,
-                "allowTracing": false
-            }
-        },
-        {
-            "id": "/subscriptions/81038c04-43fa-4ca7-82a5-7c7b7254e705/resourceGroups/Developer/providers/Microsoft.ApiManagement/service/ThangAPIM/subscriptions/basic",
-            "type": "Microsoft.ApiManagement/service/subscriptions",
-            "name": "basic",
-            "properties": {
-                "scope": "/subscriptions/81038c04-43fa-4ca7-82a5-7c7b7254e705/resourceGroups/Developer/providers/Microsoft.ApiManagement/service/ThangAPIM/products/basic",
-                "displayName": "Basic",
-                "state": "active",
-                "createdDate": "2026-06-25T04:56:18.433Z",
-                "startDate": null,
-                "expirationDate": null,
-                "endDate": null,
-                "notificationDate": null,
-                "stateComment": null,
-                "allowTracing": false
-            }
-        },
-        {
-            "id": "/subscriptions/81038c04-43fa-4ca7-82a5-7c7b7254e705/resourceGroups/Developer/providers/Microsoft.ApiManagement/service/ThangAPIM/subscriptions/standard",
-            "type": "Microsoft.ApiManagement/service/subscriptions",
-            "name": "standard",
-            "properties": {
-                "scope": "/subscriptions/81038c04-43fa-4ca7-82a5-7c7b7254e705/resourceGroups/Developer/providers/Microsoft.ApiManagement/service/ThangAPIM/products/standard",
-                "displayName": "Standard",
-                "state": "active",
-                "createdDate": "2026-06-25T04:56:50.947Z",
-                "startDate": null,
-                "expirationDate": null,
-                "endDate": null,
-                "notificationDate": null,
-                "stateComment": null,
-                "allowTracing": false
-            }
-        }
-    ],
-    "count": 3
-}
+[
+  {
+    "topic": "/subscriptions/81038c04-43fa-4ca7-82a5-7c7b7254e705/resourceGroups/Developer/providers/Microsoft.Storage/storageAccounts/thangstorage",
+    "subject": "/blobServices/default/containers/uploads/blobs/rlos-checklist-rule-response.json",
+    "eventType": "Microsoft.Storage.BlobCreated",
+    "id": "65847ed0-901e-0061-3a26-1bf240066aed",
+    "data": {
+      "api": "PutBlob",
+      "requestId": "65847ed0-901e-0061-3a26-1bf240000000",
+      "eTag": "0x8DEE93DCDF1376C",
+      "contentType": "application/json",
+      "contentLength": 9453,
+      "blobType": "BlockBlob",
+      "accessTier": "Default",
+      "url": "https://thangstorage.blob.core.windows.net/uploads/rlos-checklist-rule-response.json",
+      "sequencer": "00000000000000000000000000042419000000000000fc9e",
+      "storageDiagnostics": {
+        "batchId": "dd7f255a-e006-0054-0026-1b6aa7000000"
+      }
+    },
+    "dataVersion": "",
+    "metadataVersion": "1",
+    "eventTime": "2026-07-24T04:41:19.0613626Z"
+  }
+]

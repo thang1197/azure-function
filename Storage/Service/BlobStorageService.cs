@@ -5,22 +5,25 @@ using Azure.Storage.Sas;
 using AzureFunction.Configuration.App;
 using AzureFunction.Storage.DTO;
 using AzureFunction.Storage.Entity;
+using AzureFunction.Utility;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace AzureFunction.Storage.Service
 {
-    public class BlobStorageService(ILogger<BlobStorageService> logger, BlobServiceClient blobServiceClient, IOptions<BlobStorageSettings> blobStorageSettings) : IBlobStorageService
+    public class BlobStorageService(
+        ILogger<BlobStorageService> logger,
+        BlobServiceClient blobServiceClient,
+        IOptions<BlobStorageSettings> blobStorageSettings
+        ) : IBlobStorageService
     {
         private readonly BlobServiceClient _blobServiceClient = blobServiceClient;
         private readonly BlobStorageSettings _blobStorageSettings = blobStorageSettings.Value;
         private readonly ILogger<BlobStorageService> _logger = logger;
-        public async Task<FileStorage> UploadAsync(string fileName, Stream fileContent)
+        public async Task<FileStorage> UploadAsync(string fileName,string containerName, Stream fileContent, IDictionary<string, string>? metaData)
         {
             var formatFileName = Guid.NewGuid() + Path.GetExtension(fileName);
-            var containerName = _blobStorageSettings.ContainerName;
-
             var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
 
             if (!await containerClient.ExistsAsync())
@@ -30,34 +33,54 @@ namespace AzureFunction.Storage.Service
 
             var blobClient = containerClient.GetBlobClient(formatFileName);
 
-            // using var stream = file.OpenReadStream();
-
-
             var provider = new FileExtensionContentTypeProvider();
             if (!provider.TryGetContentType(fileName, out var contentType))
             {
                 contentType = "application/octet-stream";
             }
 
-            var response = await blobClient.UploadAsync(fileContent, new BlobHttpHeaders { ContentType = contentType });
+            var fileMetaData = new Dictionary<string, string> {
+                { "fileName", fileName },
+                { "contentType", contentType },
+                { "size", fileContent.Length.ToString() },
+                { "folder", containerName }
+            };
+
+            if (metaData != null)
+            {
+                foreach (var item in metaData)
+                {
+                    fileMetaData.Add(item.Key, item.Value);
+                }
+            }
+
+            var blobOptions = new BlobUploadOptions
+            {
+                HttpHeaders = new BlobHttpHeaders { ContentType = contentType },
+                Metadata = fileMetaData
+            };
+
+            var response = await blobClient.UploadAsync(fileContent, blobOptions);
             var fileStorage = new FileStorage
             {
                 Name = formatFileName,
                 ContentType = contentType,
                 Size = fileContent.Length,
                 Url = blobClient.Uri.ToString(),
-                Version = response.Value.VersionId
+                Version = response.Value.VersionId,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                UserCreated = metaData != null ? metaData["userCreated"] : "default",
+                UserUpdated = metaData != null ? metaData["userUpdated"] : "default"
             };
 
             return fileStorage;
         }
 
-        public async Task<bool> DeleteAsync(string blobName)
+        public async Task<bool> DeleteAsync(string blobName, string containerName)
         {
             try
             {
-                var containerName = _blobStorageSettings.ContainerName;
-
                 var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
 
                 if (!await containerClient.ExistsAsync())
@@ -75,10 +98,8 @@ namespace AzureFunction.Storage.Service
             }
         }
 
-        public async Task<List<string>> ListFilesAsync()
+        public async Task<List<string>> ListFilesAsync(string containerName)
         {
-            var containerName = _blobStorageSettings.ContainerName;
-
             var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
 
             if (!await containerClient.ExistsAsync())
@@ -136,13 +157,7 @@ namespace AzureFunction.Storage.Service
 
                 if (await blobClient.ExistsAsync())
                 {
-                    var startsOn = DateTimeOffset.UtcNow.AddMinutes(-5);
-                    var delegationKeyOptions = new BlobGetUserDelegationKeyOptions(expiresOn)
-                    {
-                        StartsOn = startsOn
-                    };
 
-                    var userDelegationKey = await _blobServiceClient.GetUserDelegationKeyAsync(delegationKeyOptions);
 
                     var sasBuilder = new BlobSasBuilder
                     {
@@ -153,6 +168,19 @@ namespace AzureFunction.Storage.Service
                     };
 
                     sasBuilder.SetPermissions(BlobSasPermissions.Read);
+                    // Checks if the client can sign using Shared Key (Works in Azurite + Cloud)
+                    if (blobClient.CanGenerateSasUri)
+                    {
+                        return blobClient.GenerateSasUri(sasBuilder).ToString();
+                    }
+
+                    var startsOn = DateTimeOffset.UtcNow.AddMinutes(-5);
+                    var delegationKeyOptions = new BlobGetUserDelegationKeyOptions(expiresOn)
+                    {
+                        StartsOn = startsOn
+                    };
+
+                    var userDelegationKey = await _blobServiceClient.GetUserDelegationKeyAsync(delegationKeyOptions);
 
                     var sasToken = sasBuilder.ToSasQueryParameters(userDelegationKey.Value, _blobServiceClient.AccountName);
                     return $"{blobClient.Uri}?{sasToken}";
@@ -164,6 +192,24 @@ namespace AzureFunction.Storage.Service
             {
                 _logger.LogError(ex, "Error generating SAS URI");
                 throw new Exception($"Error generating SAS URI: {ex.Message}");
+            }
+        }
+
+        public async Task<IDictionary<string, string>> GetBlobMetadataAsync(string blobName, string containerName)
+        {
+            try
+            {
+                var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
+                var blobClient = containerClient.GetBlobClient(blobName);
+
+                BlobProperties properties = await blobClient.GetPropertiesAsync();
+
+                return properties.Metadata;
+            }
+            catch (System.Exception)
+            {
+
+                throw;
             }
         }
     }

@@ -10,14 +10,16 @@ namespace AzureFunction.Storage.Service
 {
     public interface IBlobStorageService
     {
-        public Task<FileStorage> UploadAsync(string fileName, Stream fileContent);
+        public Task<FileStorage> UploadAsync(string fileName, string containerName, Stream fileContent, IDictionary<string, string>? metaData = null);
 
         public Task<BlobStreamDownload> DownloadAsync(string blobName);
 
-        public Task<bool> DeleteAsync(string blobName);
+        public Task<bool> DeleteAsync(string blobName, string containerName);
 
-        public Task<List<string>> ListFilesAsync();
+        public Task<List<string>> ListFilesAsync(string containerName);
 
         public Task<string> GenerateSasUri(string blobName);
+
+        public Task<IDictionary<string, string>> GetBlobMetadataAsync(string blobName, string containerName);
     }
 }

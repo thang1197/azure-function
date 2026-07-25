@@ -23,6 +23,8 @@ namespace AzureFunction.Configuration.App
         public string ClientId { get; set; } = string.Empty;
 
         public string ClientSecret { get; set; } = string.Empty;
+
+        public string Scope { get; set; } = string.Empty;
     }
 
     public class BlobStorageSettings
@@ -50,5 +52,8 @@ namespace AzureFunction.Configuration.App
         public string SubscriptionId { get; set; } = string.Empty;
         public string ResourceGroupName { get; set; } = string.Empty;
         public string ServiceName { get; set; } = string.Empty;
+
+        public string Url { get; set; } = string.Empty;
     }
+
 }

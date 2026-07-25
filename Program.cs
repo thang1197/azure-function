@@ -17,12 +17,17 @@ using Microsoft.Extensions.Options;
 using AzureFunction.Authentication.Service;
 using Azure.ResourceManager;
 using AzureFunction.Products.Service;
+using AzureFunction.Utility;
+using AzureFunction.Tasks.Service;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using AzureFunction.Middleware;
 
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
 builder.ConfigureFunctionsWebApplication();
-
+    
 // Configure Database Context
 builder.Services.AddDbContext<AppDbContext>(opts =>
 {
@@ -39,6 +44,11 @@ builder.Services.Configure<AzureAdSettings>(builder.Configuration.GetSection(Azu
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection(JwtSettings.SectionName));
 builder.Services.Configure<ApiManagementSettings>(builder.Configuration.GetSection(ApiManagementSettings.SectionName));
 
+ var azureAdSettings = builder.Configuration
+        .GetSection(AzureAdSettings.SectionName)
+        .Get<AzureAdSettings>() ?? throw new Exception("Azure AD settings not found");
+
+
 // Register Repositories and Services
 // Repositories
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
@@ -49,13 +59,14 @@ builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
 builder.Services.AddScoped<IMailService, MailService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<ITaskService, TaskService>();
 
 builder.Services.AddSingleton(x =>
 {
     if (Environment.GetEnvironmentVariable("TargetEnvironment") == "Development")
     {
         var blobServiceClient = new BlobServiceClient(
-            new Uri(Environment.GetEnvironmentVariable("AzureWebJobsStorageDev")!)
+            Environment.GetEnvironmentVariable("AzureWebJobsStorageDev")
         );
 
         return blobServiceClient;
@@ -127,8 +138,21 @@ builder.Services.AddSingleton(x =>
     );
 });
 
-builder.Services
-    .AddApplicationInsightsTelemetryWorkerService()
-    .ConfigureFunctionsApplicationInsights();
+// Http Client
+builder.Services.AddSingleton(x =>
+{
+    var azureAdSettings = x.GetRequiredService<IOptions<AzureAdSettings>>().Value;
+    var apiManagementSettings = x.GetRequiredService<IOptions<ApiManagementSettings>>().Value;
+    var clientCredential = x.GetRequiredService<ClientSecretCredential>();
 
-builder.Build().Run();
+    return new HttpHelper(apiManagementSettings, azureAdSettings, clientCredential);
+});
+
+// builder.Services
+//     .AddApplicationInsightsTelemetryWorkerService()
+//     .ConfigureFunctionsApplicationInsights();
+
+builder.UseMiddleware<JwtAuthMiddleware>();
+var app = builder.Build();
+
+app.Run();
