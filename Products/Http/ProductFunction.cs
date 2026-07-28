@@ -17,7 +17,7 @@ namespace AzureFunction.Products.Http
     {
         private readonly IProductService _productService = productService;
         [Function("GetProducts")]
-        public async Task<IActionResult> GetProducts([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequest req)
+        public async Task<IActionResult> GetProducts([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req)
         {
             // Implementation for the product function
             try
@@ -32,7 +32,7 @@ namespace AzureFunction.Products.Http
         }
 
         [Function("GetSubsciptionsByProduct")]
-        public async Task<IActionResult> GetSubsciptionsByProduct([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequest req)
+        public async Task<IActionResult> GetSubsciptionsByProduct([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req)
         {
             try
             {
@@ -53,7 +53,7 @@ namespace AzureFunction.Products.Http
         }
 
         [Function("Subscribe")]
-        public async Task<IActionResult> Subscribe([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequest req)
+        public async Task<IActionResult> Subscribe([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req)
         {
             try
             {

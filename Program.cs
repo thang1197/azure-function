@@ -19,15 +19,17 @@ using Azure.ResourceManager;
 using AzureFunction.Products.Service;
 using AzureFunction.Utility;
 using AzureFunction.Tasks.Service;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
 using AzureFunction.Middleware;
+using Azure.Security.KeyVault.Secrets;
+using System.Text.Json.Nodes;
+using Microsoft.ApplicationInsights.Extensibility;
+
 
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
 builder.ConfigureFunctionsWebApplication();
-    
+
 // Configure Database Context
 builder.Services.AddDbContext<AppDbContext>(opts =>
 {
@@ -38,16 +40,55 @@ builder.Services.AddDbContext<AppDbContext>(opts =>
     opts.UseNpgsql(connectionString);
 });
 
+// 2. Resolve credentials upfront or read them from config
+var azureAdSettings = builder.Configuration
+    .GetSection(AzureAdSettings.SectionName)
+    .Get<AzureAdSettings>() ?? throw new Exception("Azure AD settings not found");
+
+var clientSecretCredential = new ClientSecretCredential(
+    azureAdSettings.TenantId,
+    azureAdSettings.ClientId,
+    azureAdSettings.ClientSecret
+);
+
+builder.Services.AddSingleton(clientSecretCredential);
+
+var keyVaultUrl = Environment.GetEnvironmentVariable("KeyVault:Url") ?? "";
+
+if (string.IsNullOrEmpty(keyVaultUrl))
+{
+    throw new Exception("KeyVault:Url not found");
+}
+var keyVaultClient = new SecretClient(new Uri(keyVaultUrl), clientSecretCredential);
+builder.Services.AddSingleton(keyVaultClient);
+
+// Key Vault
+var KeyVaulValues = new JsonObject
+{
+   {ApplicationInsightSettings.SectionName, ApplicationInsightSettings.KeyVaultName}
+};
+for (int i = 0; i < KeyVaulValues.Count; i++)
+{
+    var sectionName = KeyVaulValues.ElementAt(i).Key;
+    var secretKey = KeyVaulValues.ElementAt(i).Value?.ToString() ?? string.Empty;
+    Console.WriteLine($"Loading secret for {sectionName} from Key Vault with key: {secretKey}");
+
+    var secret = keyVaultClient.GetSecret(secretKey).Value;
+    Console.WriteLine($"Loaded secret for {sectionName} from Key Vault: {secret.Value}");
+    KeyVaulValues[sectionName] = secret.Value;
+}
+
+
 // Load environment variables
 builder.Services.Configure<BlobStorageSettings>(builder.Configuration.GetSection(BlobStorageSettings.SectionName));
 builder.Services.Configure<AzureAdSettings>(builder.Configuration.GetSection(AzureAdSettings.SectionName));
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection(JwtSettings.SectionName));
 builder.Services.Configure<ApiManagementSettings>(builder.Configuration.GetSection(ApiManagementSettings.SectionName));
-
- var azureAdSettings = builder.Configuration
-        .GetSection(AzureAdSettings.SectionName)
-        .Get<AzureAdSettings>() ?? throw new Exception("Azure AD settings not found");
-
+builder.Services.Configure<ApplicationInsightSettings>(x =>
+{
+    var connectionString = KeyVaulValues[ApplicationInsightSettings.SectionName] ?? throw new Exception("ApplicationInsightSettings not found");  
+    x.ConnectionString = connectionString.ToString();
+});
 
 // Register Repositories and Services
 // Repositories
@@ -126,18 +167,6 @@ builder.Services.AddSingleton(x =>
     return new ArmClient(credentials);
 });
 
-// Client Secret Credential
-builder.Services.AddSingleton(x =>
-{
-    var azureAdSettings = x.GetRequiredService<IOptions<AzureAdSettings>>().Value;
-
-    return new ClientSecretCredential(
-        azureAdSettings.TenantId,
-        azureAdSettings.ClientId,
-        azureAdSettings.ClientSecret
-    );
-});
-
 // Http Client
 builder.Services.AddSingleton(x =>
 {
@@ -148,9 +177,15 @@ builder.Services.AddSingleton(x =>
     return new HttpHelper(apiManagementSettings, azureAdSettings, clientCredential);
 });
 
-// builder.Services
-//     .AddApplicationInsightsTelemetryWorkerService()
-//     .ConfigureFunctionsApplicationInsights();
+builder.Services
+    .AddApplicationInsightsTelemetryWorkerService(options =>
+    {
+        var connectionString = KeyVaulValues[ApplicationInsightSettings.SectionName] ?? throw new Exception("ApplicationInsightSettings not found");
+        Console.WriteLine($"Loaded secret for {ApplicationInsightSettings.SectionName} from Key Vault: {connectionString}");
+        options.ConnectionString = connectionString.ToString();
+    })
+    .ConfigureFunctionsApplicationInsights();
+
 
 builder.UseMiddleware<JwtAuthMiddleware>();
 var app = builder.Build();

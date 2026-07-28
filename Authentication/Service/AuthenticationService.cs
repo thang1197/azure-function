@@ -11,11 +11,13 @@ using Microsoft.Extensions.Options;
 using Azure.Identity;
 using Azure.Core;
 using Microsoft.Extensions.Logging;
+using Microsoft.ApplicationInsights;
 
 namespace AzureFunction.Authentication.Service
 {
-    public class AuthenticationService(ILogger<AuthenticationService> logger, IOptions<JwtSettings> jwtSettings, ClientSecretCredential clientSecretCredential) : IAuthenticationService
+    public class AuthenticationService(ILogger<AuthenticationService> logger, IOptions<JwtSettings> jwtSettings, ClientSecretCredential clientSecretCredential, TelemetryClient telemetry) : IAuthenticationService
     {
+        private readonly TelemetryClient _telemetry = telemetry;
         private readonly JwtSettings _jwtSettings = jwtSettings.Value;
         private readonly ClientSecretCredential _clientSecretCredential = clientSecretCredential;
 
@@ -47,6 +49,8 @@ namespace AzureFunction.Authentication.Service
         {
             try
             {
+                _telemetry.TrackTrace("Manual telemetry test");
+                _telemetry.Flush();
                 var token = _clientSecretCredential.GetToken(new TokenRequestContext(["api://18b03cb2-0463-44dc-9ce6-50e641df38c5/.default"]));
                 return token.Token;
             }

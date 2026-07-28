@@ -56,4 +56,10 @@ namespace AzureFunction.Configuration.App
         public string Url { get; set; } = string.Empty;
     }
 
+    public class ApplicationInsightSettings
+    {
+        public const string SectionName = "ApplicationInsight";
+        public const string KeyVaultName = "ApplicationInsightConnectionString";
+        public string ConnectionString { get; set; } = string.Empty;
+    }
 }

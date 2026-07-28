@@ -1,25 +1,74 @@
+{
+  "status": "success",
+  "code": 200,
+  "data": {
+    "fileName": "sample_image.jpg",
+    "contentType": "image/jpeg",
+    "size": "2121525",
+    "folder": "uploads",
+    "userCreated": "5d0f5747-bb2c-414a-a954-7e3c08b78310",
+    "userUpdated": "5d0f5747-bb2c-414a-a954-7e3c08b78310"
+  }
+}
+
+{
+  "name": "@{body('HTTP_GET_BLOB_METADATA')?['data']?['fileName']}",
+  "url": "@{@triggerBody()?[0]?['data']?['url']}",
+  "contentType": "@{body('HTTP_GET_BLOB_METADATA')?['data']?['contentType']}",
+  "userCreated": "@{body('HTTP_GET_BLOB_METADATA')?['data']?['userCreated']}",
+  "userUpdated": "@{body('HTTP_GET_BLOB_METADATA')?['data']?['userUpdated']}",
+  "fileId": "@{replace(@triggerBody()?[0]?['data']?['url'], 'https://thangstorage.blob.core.windows.net/uploads/', '')}",
+  "folder": "@{body('HTTP_GET_BLOB_METADATA')?['data']?['folder']}",
+  "status": "IN_PROGRESS",
+  "size": 0
+}
+
+
 [
   {
     "topic": "/subscriptions/81038c04-43fa-4ca7-82a5-7c7b7254e705/resourceGroups/Developer/providers/Microsoft.Storage/storageAccounts/thangstorage",
-    "subject": "/blobServices/default/containers/uploads/blobs/rlos-checklist-rule-response.json",
+    "subject": "/blobServices/default/containers/uploads/blobs/dddc2b5b-37af-45e8-957a-6e86989dc73e.jpg",
     "eventType": "Microsoft.Storage.BlobCreated",
-    "id": "65847ed0-901e-0061-3a26-1bf240066aed",
+    "id": "c9eec439-d01e-0012-35a6-1caad30655cd",
     "data": {
       "api": "PutBlob",
-      "requestId": "65847ed0-901e-0061-3a26-1bf240000000",
-      "eTag": "0x8DEE93DCDF1376C",
-      "contentType": "application/json",
-      "contentLength": 9453,
+      "clientRequestId": "a8bd593a-b57a-4a86-823a-ab90e143e283",
+      "requestId": "c9eec439-d01e-0012-35a6-1caad3000000",
+      "eTag": "0x8DEEABE0DC8AA86",
+      "contentType": "image/jpeg",
+      "contentLength": 2121525,
       "blobType": "BlockBlob",
       "accessTier": "Default",
-      "url": "https://thangstorage.blob.core.windows.net/uploads/rlos-checklist-rule-response.json",
-      "sequencer": "00000000000000000000000000042419000000000000fc9e",
+      "url": "https://thangstorage.blob.core.windows.net/uploads/dddc2b5b-37af-45e8-957a-6e86989dc73e.jpg",
+      "sequencer": "00000000000000000000000000042419000000000006f763",
       "storageDiagnostics": {
-        "batchId": "dd7f255a-e006-0054-0026-1b6aa7000000"
+        "batchId": "df1ba6fe-e006-0054-00a6-1c6aa7000000"
       }
     },
     "dataVersion": "",
     "metadataVersion": "1",
-    "eventTime": "2026-07-24T04:41:19.0613626Z"
+    "eventTime": "2026-07-26T02:31:52.9139591Z"
   }
 ]
+
+{
+  "status": "success",
+  "code": 201,
+  "data": {
+    "id": 26,
+    "name": "sample_image.jpg",
+    "url": "https://thangstorage.blob.core.windows.net/uploads/1c454b58-06b1-45e2-a943-1cc566452b00.jpg",
+    "fileId": "1c454b58-06b1-45e2-a943-1cc566452b00.jpg",
+    "folder": "uploads",
+    "status": "IN_PROGRESS",
+    "size": 0,
+    "contentType": "image/jpeg",
+    "version": "",
+    "projectId": 0,
+    "taskId": 0,
+    "createdAt": "2026-07-26T03:46:45.6000882Z",
+    "updatedAt": "2026-07-26T03:46:45.6000877Z",
+    "userCreated": "5d0f5747-bb2c-414a-a954-7e3c08b78310",
+    "userUpdated": "5d0f5747-bb2c-414a-a954-7e3c08b78310"
+  }
+}

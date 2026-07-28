@@ -16,7 +16,7 @@ namespace AzureFunction.Storage.Http
         private readonly IBlobStorageService _blobStorageService = blobStorageService;
         private readonly ILogger<StorageFunction> _logger = logger;
         [Function("UploadFileFunction")]
-        public async Task<IActionResult> UploadFile([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequest req, FunctionContext executionContext)
+        public async Task<IActionResult> UploadFile([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, FunctionContext executionContext)
         {
             try
             {
@@ -61,14 +61,14 @@ namespace AzureFunction.Storage.Http
         }
 
         [Function("DownloadFileFunction")]
-        public async Task<IActionResult> DownloadFile([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequest req)
+        public async Task<IActionResult> DownloadFile([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req)
         {
             // Implementation for the storage function
             return new OkResult();
         }
 
         [Function("DeleteFileFunction")]
-        public async Task<IActionResult> DeleteFile([HttpTrigger(AuthorizationLevel.Function, "delete")] HttpRequest req)
+        public async Task<IActionResult> DeleteFile([HttpTrigger(AuthorizationLevel.Anonymous, "delete")] HttpRequest req)
         {
             try
             {
@@ -91,7 +91,7 @@ namespace AzureFunction.Storage.Http
         }
 
         [Function("ListFilesFunction")]
-        public async Task<IActionResult> ListFiles([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequest req, CancellationToken cancellationToken)
+        public async Task<IActionResult> ListFiles([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req, CancellationToken cancellationToken)
         {
             try
             {   
@@ -112,7 +112,7 @@ namespace AzureFunction.Storage.Http
         }
 
         [Function("GenerateSasUriFunction")]
-        public async Task<IActionResult> GenerateSasUri([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequest req)
+        public async Task<IActionResult> GenerateSasUri([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req)
         {
             try
             {
@@ -136,7 +136,7 @@ namespace AzureFunction.Storage.Http
         }
 
         [Function("GetBlobMetadataFunction")]
-        public async Task<IActionResult> GetBlobMetadata([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequest req)
+        public async Task<IActionResult> GetBlobMetadata([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req)
         {
             try
             {
