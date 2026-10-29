@@ -9,6 +9,7 @@ using AzureFunction.Utility;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Abstractions;
 
 namespace AzureFunction.Storage.Service
 {
@@ -16,11 +17,15 @@ namespace AzureFunction.Storage.Service
         ILogger<BlobStorageService> logger,
         BlobServiceClient blobServiceClient,
         IOptions<BlobStorageSettings> blobStorageSettings
+        // ITelemetryClient telemetryClient
         ) : IBlobStorageService
     {
         private readonly BlobServiceClient _blobServiceClient = blobServiceClient;
         private readonly BlobStorageSettings _blobStorageSettings = blobStorageSettings.Value;
         private readonly ILogger<BlobStorageService> _logger = logger;
+
+        // private readonly ITelemetryClient _telemetryClient = telemetryClient;
+
         public async Task<FileStorage> UploadAsync(string fileName,string containerName, Stream fileContent, IDictionary<string, string>? metaData)
         {
             var formatFileName = Guid.NewGuid() + Path.GetExtension(fileName);
@@ -118,9 +123,8 @@ namespace AzureFunction.Storage.Service
             return blobNames;
         }
 
-        public async Task<BlobStreamDownload> DownloadAsync(string blobName)
+        public async Task<BlobStreamDownload> DownloadAsync(string blobName, string containerName)
         {
-            var containerName = _blobStorageSettings.ContainerName;
 
             var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
             if (!await containerClient.ExistsAsync())

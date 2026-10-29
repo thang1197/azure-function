@@ -12,7 +12,7 @@ namespace AzureFunction.Storage.Service
     {
         public Task<FileStorage> UploadAsync(string fileName, string containerName, Stream fileContent, IDictionary<string, string>? metaData = null);
 
-        public Task<BlobStreamDownload> DownloadAsync(string blobName);
+        public Task<BlobStreamDownload> DownloadAsync(string blobName, string containerName);
 
         public Task<bool> DeleteAsync(string blobName, string containerName);
 

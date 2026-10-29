@@ -23,6 +23,9 @@ using AzureFunction.Middleware;
 using Azure.Security.KeyVault.Secrets;
 using System.Text.Json.Nodes;
 using Microsoft.ApplicationInsights.Extensibility;
+using AzureFunction.Configuration.ApplicationInsight;
+using AzureFunction.MessageQueue.Service;
+using Azure.Messaging.ServiceBus;
 
 
 
@@ -45,6 +48,8 @@ var azureAdSettings = builder.Configuration
     .GetSection(AzureAdSettings.SectionName)
     .Get<AzureAdSettings>() ?? throw new Exception("Azure AD settings not found");
 
+
+// Client Credentials
 var clientSecretCredential = new ClientSecretCredential(
     azureAdSettings.TenantId,
     azureAdSettings.ClientId,
@@ -115,17 +120,10 @@ builder.Services.AddSingleton(x =>
     else
     {
         var blogStorageSettings = x.GetRequiredService<IOptions<BlobStorageSettings>>().Value;
-        var azureAdSettings = x.GetRequiredService<IOptions<AzureAdSettings>>().Value;
-
-        var credentials = new ClientSecretCredential(
-            azureAdSettings.TenantId,
-            azureAdSettings.ClientId,
-            azureAdSettings.ClientSecret
-        );
 
         var blobServiceClient = new BlobServiceClient(
             new Uri(blogStorageSettings.BlobServiceUri),
-            credentials
+            clientSecretCredential
         );
 
         return blobServiceClient;
@@ -134,37 +132,16 @@ builder.Services.AddSingleton(x =>
 
 builder.Services.AddSingleton(x =>
 {
-    var credentials = new ClientSecretCredential(
-        Environment.GetEnvironmentVariable("AzureTenantId"),
-        Environment.GetEnvironmentVariable("AzureClientId"),
-        Environment.GetEnvironmentVariable("AzureClientSecret")
-    );
-
     var queueName = "notification-queue";
     var uri = new Uri("https://thanglhstorage.queue.core.windows.net/" + queueName);
-
-    var queueOptions = new QueueClientOptions
-    {
-        MessageEncoding = QueueMessageEncoding.Base64
-    };
-    var client = new QueueClient(uri, credentials);
-
-
+    var client = new QueueClient(uri, clientSecretCredential);
     return client;
 });
 
 // ARM Client
 builder.Services.AddSingleton(x =>
 {
-    var azureAdSettings = x.GetRequiredService<IOptions<AzureAdSettings>>().Value;
-
-    var credentials = new ClientSecretCredential(
-        azureAdSettings.TenantId,
-        azureAdSettings.ClientId,
-        azureAdSettings.ClientSecret
-    );
-
-    return new ArmClient(credentials);
+    return new ArmClient(clientSecretCredential);
 });
 
 // Http Client
@@ -177,14 +154,30 @@ builder.Services.AddSingleton(x =>
     return new HttpHelper(apiManagementSettings, azureAdSettings, clientCredential);
 });
 
+// Service Bus Client
+builder.Services.AddSingleton(x =>
+{
+    var connectionString = Environment.GetEnvironmentVariable("AzureWebJobsServiceBusStandard") ?? throw new Exception("AzureWebJobsServiceBusStandard not found");
+    return new ServiceBusClient(connectionString);
+});
+
+
+// Application Insight
 builder.Services
     .AddApplicationInsightsTelemetryWorkerService(options =>
     {
         var connectionString = KeyVaulValues[ApplicationInsightSettings.SectionName] ?? throw new Exception("ApplicationInsightSettings not found");
-        Console.WriteLine($"Loaded secret for {ApplicationInsightSettings.SectionName} from Key Vault: {connectionString}");
         options.ConnectionString = connectionString.ToString();
     })
     .ConfigureFunctionsApplicationInsights();
+
+builder.Services.Configure<TelemetryConfiguration>(config =>
+{
+    config.DefaultTelemetrySink.TelemetryProcessorChainBuilder
+          .UseSampling(25.0)
+          .Build();
+});
+builder.Services.AddSingleton<ITelemetryInitializer, ApplicationInsightConfiguration>();
 
 
 builder.UseMiddleware<JwtAuthMiddleware>();

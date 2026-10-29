@@ -31,6 +31,8 @@ namespace AzureFunction.Storage.Http
                 var form = await req.ReadFormAsync();
                 var file = form.Files["file"]; // "file" must match the form-data field name
                 var containerName = form["containerName"];
+                var taskId = form["taskId"];
+                var projectId = form["projectId"];
 
                 if(string.IsNullOrEmpty(containerName))
                 {
@@ -45,9 +47,11 @@ namespace AzureFunction.Storage.Http
                 var metadata = new Dictionary<string, string>
                 {
                     {"userCreated", claims != null ? claims.UserId.ToString() : "default" },
-                    {"userUpdated", claims != null ? claims.UserId.ToString() : "default" }
+                    {"userUpdated", claims != null ? claims.UserId.ToString() : "default" },
+                    {"taskId", string.IsNullOrEmpty(taskId.ToString()) ? "0" : taskId.ToString()},
+                    {"projectId", string.IsNullOrEmpty(taskId.ToString()) ? "0" : taskId.ToString() }
                 };
-                var fileName = await _blobStorageService.UploadAsync(file.FileName, containerName, file.OpenReadStream(), metadata);
+                var fileName = await _blobStorageService.UploadAsync(file.FileName, containerName.ToString(), file.OpenReadStream(), metadata);
                 return HttpHelper.GenerateResponse(fileName);
             }
             catch (RequestFailedException ex)
@@ -61,10 +65,28 @@ namespace AzureFunction.Storage.Http
         }
 
         [Function("DownloadFileFunction")]
-        public async Task<IActionResult> DownloadFile([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req)
+        public async Task<IActionResult> DownloadFile([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req, FunctionContext executionContext)
         {
+            var fileName = req.Query["fileName"];
+            var containerName = req.Query["containerName"];
+
+            if (string.IsNullOrEmpty(fileName) || string.IsNullOrEmpty(containerName))
+            {
+                return HttpHelper.GenerateErrorResponse("Missing file name or container name", StatusCodes.Status400BadRequest);
+            }
             // Implementation for the storage function
-            return new OkResult();
+            try
+            {
+                var response = await _blobStorageService.DownloadAsync(fileName!, containerName!);
+                return new FileStreamResult(response.Content, "application/octet-stream")
+                {
+                    FileDownloadName = response.FileName
+                };
+            }
+            catch (System.Exception ex)
+            {
+                return HttpHelper.GenerateErrorResponse(ex.Message, StatusCodes.Status500InternalServerError);
+            }
         }
 
         [Function("DeleteFileFunction")]
